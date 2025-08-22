@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -53,5 +55,18 @@ func Test_application_addIPToContext(t *testing.T) {
 		}
 
 		handlerTest.ServeHTTP(httptest.NewRecorder(), req)
+	}
+}
+
+func Test_application_ipFromContext(t *testing.T) {
+	var app application
+
+	ctx := context.Background()
+
+	ctx = context.WithValue(ctx, contextUserKey, "xpto")
+	ip := app.ipFromContext(ctx)
+
+	if !strings.EqualFold("xpto", ip) {
+		t.Error("wrong value returned from context")
 	}
 }
