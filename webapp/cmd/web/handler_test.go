@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -36,4 +37,29 @@ func Test_application_handlers(t *testing.T) {
 			t.Errorf("for %s expected status %d, but got %d", e.name, e.expectedStatusCode, resp.StatusCode)
 		}
 	}
+}
+
+func TestAppHome(t *testing.T) {
+	//create a request
+	request, _ := http.NewRequest("GET", "/", nil)
+	request = addContextSessionToRequest(request, &app)
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(app.Home)
+	handler.ServeHTTP(rr, request)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("Test app home return wrong status code, expected 200 but bot %d", rr.Code)
+	}
+}
+
+func getCtx(request *http.Request) context.Context {
+	ctx := context.WithValue(request.Context(), contextUserKey, "unkwown")
+	return ctx
+}
+
+func addContextSessionToRequest(request *http.Request, app *application) *http.Request {
+	request = request.WithContext(getCtx(request))
+	ctx, _ := app.Session.Load(request.Context(), request.Header.Get("X-Session"))
+	return request.WithContext(ctx)
 }
