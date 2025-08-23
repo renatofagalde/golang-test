@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/url"
+	"strings"
 )
 
 type errors map[string][]string
@@ -38,4 +39,23 @@ func (f *Form) Has(field string) bool {
 		return false
 	}
 	return true
+}
+
+func (f *Form) Required(fields ...string) {
+	for _, field := range fields {
+		value := f.Data.Get(field)
+		if strings.TrimSpace(value) == "" {
+			f.Errors.Add(field, "This field cannot be blank")
+		}
+	}
+}
+
+func (f *Form) Check(ok bool, key, message string) {
+	if !ok {
+		f.Errors.Add(key, message)
+	}
+}
+
+func (f *Form) Valid() bool {
+	return len(f.Errors) == 0
 }
