@@ -41,6 +41,43 @@ func Test_application_handlers(t *testing.T) {
 	}
 }
 
+func TestAppHome_V2(t *testing.T) {
+
+	var tests = []struct {
+		name         string
+		putInSection string
+		expectedHTML string
+	}{
+		{"first visit", "", "<small>From Session:"},
+	}
+
+	for _, e := range tests {
+		request, _ := http.NewRequest("GET", "/", nil)
+		request = addContextSessionToRequest(request, &app)
+
+		_ = app.Session.Destroy(request.Context())
+		if e.putInSection != "" {
+			app.Session.Put(request.Context(), "test", e.putInSection)
+		}
+
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(app.Home)
+
+		handler.ServeHTTP(rr, request)
+
+		if rr.Code != http.StatusOK {
+			t.Errorf("TestAppHome returned wrong status code; expected 200 but got %d", rr.Code)
+		}
+
+		body, _ := io.ReadAll(rr.Body)
+		if !strings.Contains(string(body), e.expectedHTML) {
+			t.Errorf("%s: did not find %s, in response body", e.name, e.expectedHTML)
+		}
+
+	}
+
+}
+
 func TestAppHome(t *testing.T) {
 	//create a request
 	request, _ := http.NewRequest("GET", "/", nil)
