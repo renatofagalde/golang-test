@@ -25,6 +25,8 @@ func Test_application_handlers(t *testing.T) {
 	ts := httptest.NewTLSServer(routes)
 	defer ts.Close()
 
+	//pathToTemplates = "./../../templates/"
+	//
 
 	//range through test data
 	for _, e := range theTests {
@@ -93,6 +95,21 @@ func TestAppHome(t *testing.T) {
 	body, _ := io.ReadAll(rr.Body)
 	if !strings.Contains(string(body), `<small>From Session:`) {
 		t.Error("did not find correct text in html")
+	}
+}
+
+func TestApp_renderWithBadTemplate(t *testing.T) {
+	//set templatepath to a locatioion with a bad template ft
+
+	pathToTemplates = "./testdata/"
+	request, _ := http.NewRequest("GET", "/", nil)
+
+	request = addContextSessionToRequest(request, &app)
+	rr := httptest.NewRecorder()
+
+	err := app.render(rr, request, "bad.page.gohtml", &TemplateData{})
+	if err == nil {
+		t.Error("expected error from bad template")
 	}
 }
 
