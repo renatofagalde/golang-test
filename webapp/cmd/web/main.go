@@ -12,7 +12,7 @@ type application struct {
 }
 
 func main() {
-	//set up an app config
+
 	app := application{}
 
 	//get a session manager
@@ -26,4 +26,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 }
