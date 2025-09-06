@@ -24,7 +24,10 @@ func (app *application) Home(response http.ResponseWriter, request *http.Request
 
 	_ = app.render(response, request, "home.page.gohtml", &TemplateData{Data: td})
 }
-func (app *application) profile(response http.ResponseWriter, request *http.Request) {
+func (app *application) Profile(response http.ResponseWriter, request *http.Request) {
+
+	_ = app.render(response, request, "profile.page.gohtml", &TemplateData{})
+}
 
 type TemplateData struct {
 	IP   string
