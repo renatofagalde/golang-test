@@ -69,7 +69,6 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := app.DB.GetUserByEmail(email)
 	if err != nil {
-		log.Println(err)
 	}
 
 	log.Println(email, password, user.ID)
