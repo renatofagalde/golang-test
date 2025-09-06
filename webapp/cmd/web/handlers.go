@@ -30,7 +30,6 @@ func (app *application) Profile(response http.ResponseWriter, request *http.Requ
 }
 
 type TemplateData struct {
-	IP   string
 	Data map[string]any
 }
 
