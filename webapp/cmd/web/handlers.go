@@ -33,7 +33,6 @@ type TemplateData struct {
 	Data map[string]any
 }
 
-func (app *application) render(w http.ResponseWriter, r *http.Request, t string, data *TemplateData) error {
 
 	parsedTemplate, err := template.ParseFiles(path.Join(pathToTemplates, t),
 		path.Join(pathToTemplates, "base.layout.gohtml"))
