@@ -1,7 +1,7 @@
 package main
 
 import (
-	"database/sql"
+	"bootstrap/pkg/db"
 	"flag"
 	"log"
 	"net/http"
@@ -11,7 +11,7 @@ import (
 
 type application struct {
 	DSN     string
-	DB      *sql.DB
+	DB      db.PostgresConn
 	Session *scs.SessionManager
 }
 
@@ -27,7 +27,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app.DB = conn
+	app.DB = db.PostgresConn{DB: conn}
+
+	app.DB.AllUsers()
 
 	//get a session manager
 	app.Session = getSession()
