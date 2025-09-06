@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"bootstrap/pkg/data"
 	"html/template"
 	"log"
 	"net/http"
@@ -30,11 +30,14 @@ func (app *application) Profile(response http.ResponseWriter, request *http.Requ
 }
 
 type TemplateData struct {
-	IP   string
-	Data map[string]any
+	IP    string
+	Data  map[string]any
+	Error string
+	Flash string
+	User  data.User
 }
 
-func (app *application) render(w http.ResponseWriter, r *http.Request, t string, data *TemplateData) error {
+func (app *application) render(w http.ResponseWriter, r *http.Request, t string, td *TemplateData) error {
 
 	parsedTemplate, err := template.ParseFiles(path.Join(pathToTemplates, t),
 		path.Join(pathToTemplates, "base.layout.gohtml"))
@@ -43,9 +46,12 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, t string,
 		return err
 	}
 
-	data.IP = app.ipFromContext(r.Context())
+	td.IP = app.ipFromContext(r.Context())
 
-	err = parsedTemplate.Execute(w, data)
+	td.Error = app.Session.PopString(r.Context(), "error")
+	td.Flash = app.Session.PopString(r.Context(), "flash")
+
+	err = parsedTemplate.Execute(w, td)
 	if err != nil {
 		return err
 	}
@@ -54,10 +60,10 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, t string,
 }
 
 func (app *application) Login(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		log.Println(err)
 		http.Error(w, "bad request", http.StatusBadRequest)
+		return
 	}
 
 	form := NewForm(r.PostForm)
@@ -78,12 +84,25 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println(email, password, user.ID)
-	fmt.Fprint(w, email)
+	if !app.authenticate(r, user, password) {
+		app.Session.Put(r.Context(), "error", "Invalid login")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
 
 	_ = app.Session.RenewToken(r.Context())
-
 	app.Session.Put(r.Context(), "flash", "Successfully logged in!")
+	http.Redirect(w, r, "/u/p", http.StatusSeeOther)
+	//	return
+}
 
-	http.Redirect(w, r, "/users/profile", http.StatusSeeOther)
+func (app *application) authenticate(request *http.Request, user *data.User, password string) bool {
+
+	if valid, err := user.PasswordMatches(password); err != nil || !valid {
+		return false
+	}
+
+	app.Session.Put(request.Context(), "user", user)
+
+	return true
 }
