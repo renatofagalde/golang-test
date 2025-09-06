@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bootstrap/pkg/data"
 	"bootstrap/pkg/db"
+	"encoding/gob"
 	"flag"
 	"log"
 	"net/http"
@@ -16,6 +18,8 @@ type application struct {
 }
 
 func main() {
+
+	gob.Register(data.User{})
 
 	app := application{}
 
