@@ -59,7 +59,8 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 	form := NewForm(r.PostForm)
 	form.Required("email", "password")
 	if !form.Valid() {
-		fmt.Fprint(w, "failed validation")
+		app.Session.Put(r.Context(), "error", "Invalid login credential")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
@@ -67,8 +68,11 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 	password := r.Form.Get("password")
 
 	user, err := app.DB.GetUserByEmail(email)
+	if err != nil {
+		log.Println(err)
+	}
 
-	log.Println(email, password)
+	log.Println(email, password, user.ID)
 
 	fmt.Fprint(w, email)
 }
