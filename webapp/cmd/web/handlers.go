@@ -69,9 +69,17 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := app.DB.GetUserByEmail(email)
 	if err != nil {
+		app.Session.Put(r.Context(), "error", "Invalid login")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
 	}
 
 	log.Println(email, password, user.ID)
-
 	fmt.Fprint(w, email)
+
+	_ = app.Session.RenewToken(r.Context())
+
+	app.Session.Put(r.Context(), "flash", "Successfully logged in!")
+
+	http.Redirect(w, r, "/users/profile", http.StatusSeeOther)
 }
