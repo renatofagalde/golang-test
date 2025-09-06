@@ -24,6 +24,10 @@ func (app *application) Home(response http.ResponseWriter, request *http.Request
 
 	_ = app.render(response, request, "home.page.gohtml", &TemplateData{Data: td})
 }
+func (app *application) Profile(response http.ResponseWriter, request *http.Request) {
+
+	_ = app.render(response, request, "profile.page.gohtml", &TemplateData{})
+}
 
 type TemplateData struct {
 	IP   string
@@ -69,10 +73,17 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := app.DB.GetUserByEmail(email)
 	if err != nil {
-		log.Println(err)
+		app.Session.Put(r.Context(), "error", "Invalid login")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
 	}
 
 	log.Println(email, password, user.ID)
-
 	fmt.Fprint(w, email)
+
+	_ = app.Session.RenewToken(r.Context())
+
+	app.Session.Put(r.Context(), "flash", "Successfully logged in!")
+
+	http.Redirect(w, r, "/users/profile", http.StatusSeeOther)
 }

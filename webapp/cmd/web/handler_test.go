@@ -25,9 +25,6 @@ func Test_application_handlers(t *testing.T) {
 	ts := httptest.NewTLSServer(routes)
 	defer ts.Close()
 
-	//pathToTemplates = "./../../templates/"
-	//
-
 	//range through test data
 	for _, e := range theTests {
 		resp, err := ts.Client().Get(ts.URL + e.url)
@@ -111,6 +108,9 @@ func TestApp_renderWithBadTemplate(t *testing.T) {
 	if err == nil {
 		t.Error("expected error from bad template")
 	}
+
+	pathToTemplates = "./../../templates/"
+
 }
 
 func getCtx(request *http.Request) context.Context {
