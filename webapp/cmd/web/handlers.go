@@ -53,10 +53,10 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, t string,
 }
 
 func (app *application) Login(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
+	if err := r.ParseForm(); err != nil {
 		log.Println(err)
 		http.Error(w, "bad request", http.StatusBadRequest)
+		return
 	}
 
 	form := NewForm(r.PostForm)
@@ -78,11 +78,9 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println(email, password, user.ID)
-	fmt.Fprint(w, email)
 
 	_ = app.Session.RenewToken(r.Context())
-
 	app.Session.Put(r.Context(), "flash", "Successfully logged in!")
-
-	http.Redirect(w, r, "/users/profile", http.StatusSeeOther)
+	http.Redirect(w, r, "/u/p", http.StatusSeeOther)
+	return
 }
