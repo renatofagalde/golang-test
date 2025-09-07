@@ -93,7 +93,6 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 	_ = app.Session.RenewToken(r.Context())
 	app.Session.Put(r.Context(), "flash", "Successfully logged in!")
 	http.Redirect(w, r, "/u/p", http.StatusSeeOther)
-	//	return
 }
 
 func (app *application) authenticate(request *http.Request, user *data.User, password string) bool {
