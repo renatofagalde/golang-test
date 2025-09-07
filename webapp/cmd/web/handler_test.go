@@ -140,6 +140,7 @@ func Test_app_Login(t *testing.T) {
 			expectedStatusCode: http.StatusSeeOther,
 			expectedLoc:        "/u/p",
 		},
+		{name: "missing form data",
 	}
 
 	for _, e := range tests {
