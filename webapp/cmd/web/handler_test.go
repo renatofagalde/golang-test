@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -122,4 +123,41 @@ func addContextSessionToRequest(request *http.Request, app *application) *http.R
 	request = request.WithContext(getCtx(request))
 	ctx, _ := app.Session.Load(request.Context(), request.Header.Get("X-Session"))
 	return request.WithContext(ctx)
+}
+
+func Test_app_Login(t *testing.T) {
+	var tests = []struct {
+		name               string
+		postedData         url.Values
+		expectedStatusCode int
+		expectedLoc        string
+	}{
+		{name: "valid login",
+			postedData: url.Values{
+				"email":    {"admin@example.com"},
+				"password": {"secret"},
+			},
+			expectedStatusCode: http.StatusSeeOther,
+			expectedLoc:        "/u/p",
+		},
+		{name: "missing form data",
+	}
+
+	for _, e := range tests {
+		request, _ := http.NewRequest("POST", "/login", strings.NewReader(e.postedData.Encode()))
+
+		request = addContextSessionToRequest(request, &app)
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		rr := httptest.NewRecorder()
+
+		handler := http.HandlerFunc(app.Login)
+
+		handler.ServeHTTP(rr, request)
+
+		if rr.Code != e.expectedStatusCode {
+			t.Errorf("%s: returned wrong status code; expected %d, but got %d", e.name, e.expectedStatusCode, rr.Code)
+		}
+
+	}
 }
