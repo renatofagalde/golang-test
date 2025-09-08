@@ -18,7 +18,7 @@ func (app *application) routes() http.Handler {
 	mux.Get("/u/p", app.Profile)
 
 	mux.Route("/u", func(r chi.Router) {
-		mux.Use(app.auth)
+		r.Use(app.auth)
 		mux.Get("/p", app.Profile)
 	})
 
