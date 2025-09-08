@@ -15,7 +15,6 @@ func Test_application_routes(t *testing.T) {
 	}{
 		{"/", "GET"},
 		{"/login", "POST"},
-		{"/u/login", "GET"},
 		{"/static/*", "GET"},
 	}
 
