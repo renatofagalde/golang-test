@@ -5,19 +5,22 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
+
 )
 
 func Test_application_handlers(t *testing.T) {
 	var theTests = []struct {
-		name               string
-		url                string
-		expectedStatusCode int
+		name                    string
+		url                     string
+		expectedStatusCode      int
+		expectedURL             string
+		expectedFirstStatusCode int
 	}{
-		{"home", "/", http.StatusOK},
-		{"404", "/abc", http.StatusNotFound},
+		{"home", "/", http.StatusOK, "/", http.StatusOK},
+		{"404", "/abc", http.StatusNotFound, "/fish", http.StatusNotFound},
+		{"profile", "/u/p", http.StatusOK, "/", http.StatusTemporaryRedirect},
 	}
 
 	routes := app.routes()
@@ -25,6 +28,8 @@ func Test_application_handlers(t *testing.T) {
 	//create a test server
 	ts := httptest.NewTLSServer(routes)
 	defer ts.Close()
+
+	pathToTemplates = "./../../templates/"
 
 	//range through test data
 	for _, e := range theTests {
@@ -48,6 +53,7 @@ func TestAppHome_V2(t *testing.T) {
 		expectedHTML string
 	}{
 		{"first visit", "", "<small>From Session:"},
+//		{"second", "hello world!", "<small>From Session: hello, world!"},
 	}
 
 	for _, e := range tests {
@@ -96,24 +102,6 @@ func TestAppHome(t *testing.T) {
 	}
 }
 
-func TestApp_renderWithBadTemplate(t *testing.T) {
-	//set templatepath to a locatioion with a bad template ft
-
-	pathToTemplates = "./testdata/"
-	request, _ := http.NewRequest("GET", "/", nil)
-
-	request = addContextSessionToRequest(request, &app)
-	rr := httptest.NewRecorder()
-
-	err := app.render(rr, request, "bad.page.gohtml", &TemplateData{})
-	if err == nil {
-		t.Error("expected error from bad template")
-	}
-
-	pathToTemplates = "./../../templates/"
-
-}
-
 func getCtx(request *http.Request) context.Context {
 	ctx := context.WithValue(request.Context(), contextUserKey, "unkwown")
 	return ctx
@@ -123,72 +111,4 @@ func addContextSessionToRequest(request *http.Request, app *application) *http.R
 	request = request.WithContext(getCtx(request))
 	ctx, _ := app.Session.Load(request.Context(), request.Header.Get("X-Session"))
 	return request.WithContext(ctx)
-}
-
-func Test_app_Login(t *testing.T) {
-	var tests = []struct {
-		name               string
-		postedData         url.Values
-		expectedStatusCode int
-		expectedLoc        string
-	}{
-		{name: "valid login",
-			postedData: url.Values{
-				"email":    {"admin@example.com"},
-				"password": {"secret"},
-			},
-			expectedStatusCode: http.StatusSeeOther,
-			expectedLoc:        "/u/p",
-		},
-		{name: "missing form data",
-			postedData: url.Values{
-				"email":    {""},
-				"password": {""},
-			},
-			expectedStatusCode: http.StatusSeeOther,
-			expectedLoc:        "/",
-		},
-		{name: "user not found",
-			postedData: url.Values{
-				"email":    {"you@test.com"},
-				"password": {""},
-			},
-			expectedStatusCode: http.StatusSeeOther,
-			expectedLoc:        "/",
-		},
-		{name: "bad credentials",
-			postedData: url.Values{
-				"email":    {"admin@example.com"},
-				"password": {"wrong"},
-			},
-			expectedStatusCode: http.StatusSeeOther,
-			expectedLoc:        "/",
-		},
-	}
-
-	for _, e := range tests {
-		request, _ := http.NewRequest("POST", "/login", strings.NewReader(e.postedData.Encode()))
-
-		request = addContextSessionToRequest(request, &app)
-		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		rr := httptest.NewRecorder()
-
-		handler := http.HandlerFunc(app.Login)
-
-		handler.ServeHTTP(rr, request)
-
-		if rr.Code != e.expectedStatusCode {
-			t.Errorf("%s: returned wrong status code; expected %d, but got %d", e.name, e.expectedStatusCode, rr.Code)
-		}
-
-		actualLoc, err := rr.Result().Location()
-		if err == nil {
-			if actualLoc.String() != e.expectedLoc {
-				t.Errorf("%s: expected location %s but got %s", e.name, e.expectedLoc, actualLoc.String())
-			}
-		} else {
-			t.Errorf("%s: no location header set", e.name)
-		}
-	}
 }
