@@ -2,7 +2,8 @@ package main
 
 import (
 	"bootstrap/pkg/data"
-	"bootstrap/pkg/db"
+	"bootstrap/pkg/repository"
+	"bootstrap/pkg/repository/dbrepo"
 	"encoding/gob"
 	"flag"
 	"log"
@@ -13,7 +14,7 @@ import (
 
 type application struct {
 	DSN     string
-	DB      db.PostgresConn
+	DB      repository.DatabaseRepository
 	Session *scs.SessionManager
 }
 
@@ -32,7 +33,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	app.DB = db.PostgresConn{DB: conn}
+	app.DB = &dbrepo.PostgresDBRepo{DB: conn}
 
 	app.DB.AllUsers()
 
