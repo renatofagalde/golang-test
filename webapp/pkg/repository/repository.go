@@ -1,8 +1,12 @@
 package repository
 
-import "bootstrap/pkg/data"
+import (
+	"bootstrap/pkg/data"
+	"database/sql"
+)
 
 type DatabaseRepository interface {
+	Connection() *sql.DB
 	GetUserByEmail(email string) (*data.User, error)
 	AllUsers() ([]*data.User, error)
 	UpdateUser(u data.User) error
