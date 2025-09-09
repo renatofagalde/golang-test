@@ -5,6 +5,8 @@ go test -v -run Test_isPrime
 run groups / test suits
 go test -v -run Test_app
 
+ignorar o cache dos testes:
+go test -count=1 ./...
 
  go test ./... -coverprofile=coverage.out -covermode=atomic \
   && go tool cover -html=coverage.out -o coverage.html \

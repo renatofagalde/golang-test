@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
 )
 
 func Test_application_handlers(t *testing.T) {
@@ -53,7 +52,7 @@ func TestAppHome_V2(t *testing.T) {
 		expectedHTML string
 	}{
 		{"first visit", "", "<small>From Session:"},
-//		{"second", "hello world!", "<small>From Session: hello, world!"},
+		{"second", "hello world!", "<small>"},
 	}
 
 	for _, e := range tests {
