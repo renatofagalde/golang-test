@@ -156,6 +156,7 @@ func TestPostgresDBRepositorySelectAllUser(t *testing.T) {
 	}
 
 }
+
 func TestPostgresDBRepositorySelectUserByEmail(t *testing.T) {
 	var email string = "test@example.com"
 	user, err := testRepository.GetUserByEmail(email)
@@ -170,6 +171,25 @@ func TestPostgresDBRepositorySelectUserByEmail(t *testing.T) {
 	user, err = testRepository.GetUserByEmail("no-exists@example.com")
 	if err == nil {
 		t.Error("no error reported when getting non existent user by email")
+	}
+
+}
+
+func TestPostgresDBRepositoryUpdateUser(t *testing.T) {
+	var email string = "test@example.com"
+	user, _ := testRepository.GetUserByEmail(email)
+
+	user.FirstName = "Joe"
+	user.Email = "joe@ofmango.com"
+
+	err := testRepository.UpdateUser(*user)
+	if err != nil {
+		t.Errorf("error updating user %d, %s", user.ID, err)
+	}
+
+	user, _ = testRepository.GetUserByEmail("joe@ofmango.com")
+	if user.FirstName != "Joe" {
+		t.Errorf("expeted updated record to have first name and email, but got didn't work")
 	}
 
 }
