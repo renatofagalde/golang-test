@@ -142,4 +142,17 @@ func TestPostgresDBRepositorySelectAllUser(t *testing.T) {
 	if len(allUsers) != 1 {
 		t.Errorf("all users reports wrong size; expected 1, but got %d", len(allUsers))
 	}
+
+	testUser := data.User{FirstName: "test", LastName: "test", Email: "test@example.com", Password: "secret", IsAdmin: 0, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	_, _ = testRepo.InsertUser(testUser)
+
+	allUsers, err = testRepo.AllUsers()
+	if err != nil {
+		t.Errorf("all users reports an error %s", err)
+	}
+
+	if len(allUsers) != 2 {
+		t.Errorf("all users reports wrong size; expected 1, but got %d", len(allUsers))
+	}
+
 }
