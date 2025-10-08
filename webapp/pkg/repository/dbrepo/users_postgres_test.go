@@ -160,11 +160,16 @@ func TestPostgresDBRepositorySelectUserByEmail(t *testing.T) {
 	var email string = "test@example.com"
 	user, err := testRepository.GetUserByEmail(email)
 	if err != nil {
-		t.Errorf("all users reports an error %s", err)
+		t.Errorf("error getting user by email %s", err)
 	}
 
 	if user.Email != "test@example.com" {
 		t.Errorf("wrong email returned by GetUserByEmail; expected %s but got %s", email, user.Email)
+	}
+
+	user, err = testRepository.GetUserByEmail("no-exists@example.com")
+	if err == nil {
+		t.Error("no error reported when getting non existent user by email")
 	}
 
 }
