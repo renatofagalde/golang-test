@@ -132,3 +132,14 @@ func TestPostgresDBRepositoryInsertUser(t *testing.T) {
 	}
 
 }
+
+func TestPostgresDBRepositorySelectAllUser(t *testing.T) {
+	allUsers, err := testRepo.AllUsers()
+	if err != nil {
+		t.Errorf("all users reports an error %s", err)
+	}
+
+	if len(allUsers) != 1 {
+		t.Errorf("all users reports wrong size; expected 1, but got %d", len(allUsers))
+	}
+}
