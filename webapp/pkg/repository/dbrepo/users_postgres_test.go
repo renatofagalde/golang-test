@@ -29,7 +29,7 @@ var (
 var resource *dockertest.Resource
 var pool *dockertest.Pool
 var testDB *sql.DB
-var testRepo repository.DatabaseRepository
+var testRepository repository.DatabaseRepository
 
 func TestMain(m *testing.M) {
 	// connect to dokcer. fail if docker not running
@@ -84,7 +84,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("error creating tables: %s", err)
 	}
 
-	testRepo = &PostgresDBRepo{DB: testDB}
+	testRepository = &PostgresDBRepo{DB: testDB}
 
 	//run tests
 	code := m.Run()
@@ -122,13 +122,74 @@ func Test_pingDB(t *testing.T) {
 func TestPostgresDBRepositoryInsertUser(t *testing.T) {
 	testUser := data.User{FirstName: "Admin", LastName: "User", Email: "admin@example.com", Password: "secret", IsAdmin: 1, CreatedAt: time.Now(), UpdatedAt: time.Now()}
 
-	id, err := testRepo.InsertUser(testUser)
+	id, err := testRepository.InsertUser(testUser)
 	if err != nil {
 		t.Errorf("insert user returned an error %s", err)
 	}
 
 	if id != 1 {
 		t.Errorf("insert user returned wrong id, expected 1 but got %d", id)
+	}
+
+}
+
+func TestPostgresDBRepositorySelectAllUser(t *testing.T) {
+	allUsers, err := testRepository.AllUsers()
+	if err != nil {
+		t.Errorf("all users reports an error %s", err)
+	}
+
+	if len(allUsers) != 1 {
+		t.Errorf("all users reports wrong size; expected 1, but got %d", len(allUsers))
+	}
+
+	testUser := data.User{FirstName: "test", LastName: "test", Email: "test@example.com", Password: "secret", IsAdmin: 0, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+	_, _ = testRepository.InsertUser(testUser)
+
+	allUsers, err = testRepository.AllUsers()
+	if err != nil {
+		t.Errorf("all users reports an error %s", err)
+	}
+
+	if len(allUsers) != 2 {
+		t.Errorf("all users reports wrong size; expected 1, but got %d", len(allUsers))
+	}
+
+}
+
+func TestPostgresDBRepositorySelectUserByEmail(t *testing.T) {
+	var email string = "test@example.com"
+	user, err := testRepository.GetUserByEmail(email)
+	if err != nil {
+		t.Errorf("error getting user by email %s", err)
+	}
+
+	if user.Email != "test@example.com" {
+		t.Errorf("wrong email returned by GetUserByEmail; expected %s but got %s", email, user.Email)
+	}
+
+	user, err = testRepository.GetUserByEmail("no-exists@example.com")
+	if err == nil {
+		t.Error("no error reported when getting non existent user by email")
+	}
+
+}
+
+func TestPostgresDBRepositoryUpdateUser(t *testing.T) {
+	var email string = "test@example.com"
+	user, _ := testRepository.GetUserByEmail(email)
+
+	user.FirstName = "Joe"
+	user.Email = "joe@ofmango.com"
+
+	err := testRepository.UpdateUser(*user)
+	if err != nil {
+		t.Errorf("error updating user %d, %s", user.ID, err)
+	}
+
+	user, _ = testRepository.GetUserByEmail("joe@ofmango.com")
+	if user.FirstName != "Joe" {
+		t.Errorf("expeted updated record to have first name and email, but got didn't work")
 	}
 
 }
