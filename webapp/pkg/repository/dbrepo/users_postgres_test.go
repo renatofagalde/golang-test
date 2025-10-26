@@ -211,3 +211,21 @@ func TestPostgresDBRepositoryDeleteUser(t *testing.T) {
 		t.Errorf("Error deleting user! ")
 	}
 }
+
+func TestPostgresDbRepositoryResetPassword(t *testing.T) {
+
+	err := testRepository.ResetPassword(1, "password")
+	if err != nil {
+		t.Errorf("error resetting user's password")
+	}
+
+	user, _ := testRepository.GetUser(1)
+	matches, err := user.PasswordMatches("password")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !matches {
+		t.Errorf("password should match 'password', but does not")
+	}
+}
