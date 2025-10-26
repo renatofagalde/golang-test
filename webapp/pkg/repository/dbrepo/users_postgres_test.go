@@ -193,3 +193,21 @@ func TestPostgresDBRepositoryUpdateUser(t *testing.T) {
 	}
 
 }
+
+func TestPostgresDBRepositoryDeleteUser(t *testing.T) {
+
+	users, _ := testRepository.AllUsers()
+	var usersBefore int = len(users)
+
+	err := testRepository.DeleteUser(2)
+
+	if err != nil {
+		t.Errorf("Error deleting user id: 2 -> %s", err)
+	}
+	users, _ = testRepository.AllUsers()
+	var usersAfter int = len(users)
+
+	if (usersBefore - 1) != usersAfter {
+		t.Errorf("Error deleting user! ")
+	}
+}
