@@ -194,3 +194,4 @@ func TestPostgresDBRepositoryUpdateUser(t *testing.T) {
 
 }
 
+func TestPostgresDBRepositoryDeleteUser(t *testing.T) {
