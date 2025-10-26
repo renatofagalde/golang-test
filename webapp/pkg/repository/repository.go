@@ -7,6 +7,7 @@ import (
 
 type DatabaseRepository interface {
 	Connection() *sql.DB
+	GetUser(id int) (*data.User, error)
 	GetUserByEmail(email string) (*data.User, error)
 	AllUsers() ([]*data.User, error)
 	UpdateUser(u data.User) error

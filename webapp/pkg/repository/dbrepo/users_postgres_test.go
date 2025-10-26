@@ -193,3 +193,39 @@ func TestPostgresDBRepositoryUpdateUser(t *testing.T) {
 	}
 
 }
+
+func TestPostgresDBRepositoryDeleteUser(t *testing.T) {
+
+	users, _ := testRepository.AllUsers()
+	var usersBefore int = len(users)
+
+	err := testRepository.DeleteUser(2)
+
+	if err != nil {
+		t.Errorf("Error deleting user id: 2 -> %s", err)
+	}
+	users, _ = testRepository.AllUsers()
+	var usersAfter int = len(users)
+
+	if (usersBefore - 1) != usersAfter {
+		t.Errorf("Error deleting user! ")
+	}
+}
+
+func TestPostgresDbRepositoryResetPassword(t *testing.T) {
+
+	err := testRepository.ResetPassword(1, "password")
+	if err != nil {
+		t.Errorf("error resetting user's password")
+	}
+
+	user, _ := testRepository.GetUser(1)
+	matches, err := user.PasswordMatches("password")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !matches {
+		t.Errorf("password should match 'password', but does not")
+	}
+}
