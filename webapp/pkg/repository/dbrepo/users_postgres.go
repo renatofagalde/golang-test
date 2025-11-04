@@ -227,7 +227,6 @@ func (m *PostgresDBRepo) InsertUserImage(i data.UserImage) (int, error) {
 	defer cancel()
 
 	var newID int
-	stmt := `insert into user_images (user_id, fileName, created_at, updated_at)
 		values ($1, $2, $3, $4) returning id`
 
 	err := m.DB.QueryRowContext(ctx, stmt,
