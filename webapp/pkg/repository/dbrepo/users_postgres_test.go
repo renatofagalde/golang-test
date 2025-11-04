@@ -247,4 +247,11 @@ func TestPostgresDBRepositoryInsertUserImage(t *testing.T) {
 	if newID != 1 {
 		t.Error("got wrong id for image; should be 1, but got ", newID)
 	}
+
+	image.UserID = 100
+	_, err = testRepository.InsertUserImage(image)
+
+	if err == nil {
+		t.Error("inserted a user image with non-exisent user id")
+	}
 }
