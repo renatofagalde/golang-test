@@ -93,4 +93,4 @@ func isPrime(n int) (bool, string) {
 	}
 
 	return true, fmt.Sprintf("%d, is a prime number!", n)
-}
+
