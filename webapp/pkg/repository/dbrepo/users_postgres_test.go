@@ -40,7 +40,14 @@ func TestMain(m *testing.M) {
 
 	pool = p
 
-	// set up our docker options, specifying the image and so forth
+	defer func() {
+		if resource != nil && pool != nil {
+			if err := pool.Purge(resource); err != nil {
+				log.Printf("warning: could not purge resource: %v", err)
+			}
+		}
+	}()
+
 	opts := dockertest.RunOptions{
 		Repository: "postgres",
 		Tag:        "18.0",
@@ -74,7 +81,7 @@ func TestMain(m *testing.M) {
 		}
 		return testDB.Ping()
 	}); err != nil {
-		_ = pool.Purge(resource)
+		//_ = pool.Purge(resource)
 		log.Fatalf("could not connect to database %s", err)
 	}
 
@@ -212,26 +219,7 @@ func TestPostgresDBRepositoryDeleteUser(t *testing.T) {
 	}
 }
 
-func TestPostgresDbRepositoryResetPassword(t *testing.T) {
-
-	err := testRepository.ResetPassword(1, "password")
-	if err != nil {
-		t.Errorf("error resetting user's password")
-	}
-
-	user, _ := testRepository.GetUser(1)
-	matches, err := user.PasswordMatches("password")
-	if err != nil {
-		t.Error(err)
-	}
-
-	if !matches {
-		t.Errorf("password should match 'password', but does not")
-	}
-}
-
 func TestPostgresDBRepositoryInsertUserImage(t *testing.T) {
-
 	var image data.UserImage
 
 	image.UserID = 1
@@ -253,5 +241,33 @@ func TestPostgresDBRepositoryInsertUserImage(t *testing.T) {
 
 	if err == nil {
 		t.Error("inserted a user image with non-exisent user id")
+	}
+}
+
+func TestPostgresDbRepositoryResetPassword(t *testing.T) {
+
+	err := testRepository.ResetPassword(1, "password")
+	if err != nil {
+		t.Errorf("error resetting user's password")
+	}
+
+	user, err := testRepository.GetUser(1)
+	if err != nil {
+		t.Fatalf("GetUser(1) returned error: %v", err)
+	}
+	if user == nil {
+		t.Fatalf("GetUser(1) returned nil user")
+	}
+	if user.Password == "" {
+		t.Fatalf("user.Password veio vazio (não houve update?)")
+	}
+
+	matches, err := user.PasswordMatches("password")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !matches {
+		t.Errorf("password should match 'password', but does not")
 	}
 }
