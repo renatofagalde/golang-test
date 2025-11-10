@@ -2,10 +2,14 @@ package main
 
 import (
 	"bootstrap/pkg/data"
+	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -105,4 +109,56 @@ func (app *application) authenticate(request *http.Request, user *data.User, pas
 	app.Session.Put(request.Context(), "user", user)
 
 	return true
+}
+
+func (app *application) UploadProfilePicture(w http.ResponseWriter, r *http.Request) {
+
+}
+
+type UploadedFile struct {
+	OriginalFileName string
+	FileSize         int64
+}
+
+func (app *application) UploadFile(r *http.Request, uploadDir string) ([]*UploadedFile, error) {
+	var uploadedFile []*UploadedFile
+
+	err := r.ParseMultipartForm(int64(1024 * 1024 * 5))
+	if err != nil {
+		return nil, fmt.Errorf("the upload file is too big")
+	}
+
+	for _, fHeaders := range r.MultipartForm.File {
+		for _, hdr := range fHeaders {
+			uploadedFile, err = func(uploadedFiles []*UploadedFile) ([]*UploadedFile, error) {
+				var uploadedFile UploadedFile
+				infile, err := hdr.Open()
+				if err != nil {
+					return nil, err
+				}
+				defer infile.Close()
+
+				uploadedFile.OriginalFileName = hdr.Filename
+				var out *os.File
+				defer out.Close()
+
+				if out, err = os.Create(filepath.Join(uploadDir, uploadedFile.OriginalFileName)); nil != err {
+					return nil, err
+				} else {
+					fileSize, err := io.Copy(out, infile)
+					if err != nil {
+						return nil, err
+					}
+					uploadedFile.FileSize = fileSize
+				}
+				uploadedFiles = append(uploadedFiles, &uploadedFile)
+				return uploadedFiles, nil
+			}(uploadedFile)
+			if err != nil {
+				return uploadedFile, nil
+			}
+		}
+	}
+
+	return uploadedFile, nil
 }
