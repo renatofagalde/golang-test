@@ -66,13 +66,13 @@ func (m *PostgresDBRepo) GetUser(id int) (*data.User, error) {
 	query := `
 		select 
 			u.id, u.email, u.first_name, u.last_name, u.password, u.is_admin, u.created_at, u.updated_at,
-			coalesce(u.file_name,'')
+			coalesce(ui.file_name,'')
 
 		from 
 			users u
-			left join user_images ui on (ui.user_id=u.id)
+			left join  user_images ui on (ui.user_id=u.id)
 		where 
-		    id = $1`
+		    u.id = $1`
 
 	var user data.User
 	row := m.DB.QueryRowContext(ctx, query, id)
@@ -103,13 +103,13 @@ func (m *PostgresDBRepo) GetUserByEmail(email string) (*data.User, error) {
 	query := `
 		select 
 			u.id, u.email, u.first_name, u.last_name, u.password, u.is_admin, u.created_at, u.updated_at,
-			coalesce(u.file_name,'')
+			coalesce(ui.file_name,'')
 
 		from 
 			users u
 			left join user_images ui on (ui.user_id=u.id)
 		where 
-		    email = $1`
+		    u.email = $1`
 
 	var user data.User
 	row := m.DB.QueryRowContext(ctx, query, email)
@@ -209,23 +209,22 @@ func (m *PostgresDBRepo) InsertUser(user data.User) (int, error) {
 	return newID, nil
 }
 
-// ResetPassword is the method we will use to change a user's password.
 func (m *PostgresDBRepo) ResetPassword(id int, password string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), dbTimeout)
-	defer cancel()
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	// 1) faz o hash sem contexto
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
+
+	// 2) cria o contexto só para a operação no banco
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err = m.DB.ExecContext(ctx, "SELECT 1")
+	log.Println(err)
 
 	stmt := `update users set password = $1 where id = $2`
 	_, err = m.DB.ExecContext(ctx, stmt, hashedPassword, id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // InsertUserImage inserts a user profile image into the database.
