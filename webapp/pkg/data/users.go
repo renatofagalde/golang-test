@@ -2,8 +2,9 @@ package data
 
 import (
 	"errors"
-	"golang.org/x/crypto/bcrypt"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // User describes the data for the User type.
@@ -23,6 +24,9 @@ type User struct {
 // with the hash we have stored for a given user in the database. If the password
 // and hash match, we return true; otherwise, we return false.
 func (u *User) PasswordMatches(plainText string) (bool, error) {
+	if u == nil {
+		return false, errors.New("user is nil")
+	}
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(plainText))
 	if err != nil {
 		switch {
