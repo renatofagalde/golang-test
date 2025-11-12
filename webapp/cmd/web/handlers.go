@@ -112,6 +112,32 @@ func (app *application) authenticate(request *http.Request, user *data.User, pas
 }
 
 func (app *application) UploadProfilePicture(w http.ResponseWriter, r *http.Request) {
+	files, err := app.UploadFile(r, "./static/img/")
+	if err != nil || files == nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user := app.Session.Get(r.Context(), "user").(data.User)
+
+	var i = data.UserImage{
+		UserID:   user.ID,
+		FileName: files[0].OriginalFileName,
+	}
+
+	_, err = app.DB.InsertUserImage(i)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	updatedUser, err := app.DB.GetUser(user.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	app.Session.Put(r.Context(), "user", updatedUser)
+
+	http.Redirect(w, r, "/u/p", http.StatusSeeOther)
 
 }
 
@@ -121,44 +147,47 @@ type UploadedFile struct {
 }
 
 func (app *application) UploadFile(r *http.Request, uploadDir string) ([]*UploadedFile, error) {
-	var uploadedFile []*UploadedFile
+	var uploadedFiles []*UploadedFile
 
-	err := r.ParseMultipartForm(int64(1024 * 1024 * 5))
-	if err != nil {
-		return nil, fmt.Errorf("the upload file is too big")
+	// 5 MB
+	if err := r.ParseMultipartForm(5 * 1024 * 1024); err != nil {
+		return nil, fmt.Errorf("the upload file is too big: %w", err)
+	}
+
+	// Garante que o diretório existe (caminho relativo ao CWD do processo!)
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		return nil, fmt.Errorf("cannot ensure upload dir: %w", err)
 	}
 
 	for _, fHeaders := range r.MultipartForm.File {
 		for _, hdr := range fHeaders {
-			uploadedFile, err = func(uploadedFiles []*UploadedFile) ([]*UploadedFile, error) {
-				var uploadedFile UploadedFile
-				infile, err := hdr.Open()
-				if err != nil {
-					return nil, err
-				}
-				defer infile.Close()
+			var uploadedFile UploadedFile
 
-				uploadedFile.OriginalFileName = hdr.Filename
-				var out *os.File
-				defer out.Close()
-
-				if out, err = os.Create(filepath.Join(uploadDir, uploadedFile.OriginalFileName)); nil != err {
-					return nil, err
-				} else {
-					fileSize, err := io.Copy(out, infile)
-					if err != nil {
-						return nil, err
-					}
-					uploadedFile.FileSize = fileSize
-				}
-				uploadedFiles = append(uploadedFiles, &uploadedFile)
-				return uploadedFiles, nil
-			}(uploadedFile)
+			infile, err := hdr.Open()
 			if err != nil {
-				return uploadedFile, nil
+				return nil, fmt.Errorf("cannot open uploaded part: %w", err)
 			}
+			defer infile.Close()
+
+			// evita traversal: só o nome base
+			uploadedFile.OriginalFileName = filepath.Base(hdr.Filename)
+			destPath := filepath.Join(uploadDir, uploadedFile.OriginalFileName)
+
+			out, err := os.Create(destPath)
+			if err != nil {
+				return nil, fmt.Errorf("cannot create destination file: %w", err)
+			}
+			defer out.Close()
+
+			n, err := io.Copy(out, infile)
+			if err != nil {
+				return nil, fmt.Errorf("cannot write file: %w", err)
+			}
+			uploadedFile.FileSize = n
+
+			uploadedFiles = append(uploadedFiles, &uploadedFile)
 		}
 	}
 
-	return uploadedFile, nil
+	return uploadedFiles, nil
 }
