@@ -150,7 +150,9 @@ func Test_app_UploadFile(t *testing.T) {
 	}
 
 	//clean up
-	_ = os.Remove("./testdata/img.png")
+	_ = os.Remove(fmt.Sprintf("./testdata/uploads/%s", uploadFiles[0].OriginalFileName))
+
+	wg.Wait()
 }
 
 func simulatePingUpload(fileToUpload string, writer *multipart.Writer, t *testing.T, wg *sync.WaitGroup) {
