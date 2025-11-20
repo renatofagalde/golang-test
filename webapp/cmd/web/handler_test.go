@@ -2,10 +2,18 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -110,4 +118,81 @@ func addContextSessionToRequest(request *http.Request, app *application) *http.R
 	request = request.WithContext(getCtx(request))
 	ctx, _ := app.Session.Load(request.Context(), request.Header.Get("X-Session"))
 	return request.WithContext(ctx)
+}
+
+func Test_app_UploadFile(t *testing.T) {
+	//setup pipes
+	pr, pw := io.Pipe()
+
+	//create new writer, of type *io.Writer
+	writer := multipart.NewWriter(pw)
+
+	//create a waitgroup, and add 1 to it
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	//simulate uploading a file using a goroutine and our writer
+	go simulatePingUpload("./testdata/img.png", writer, t, wg)
+
+	//read from the pipe which receives data
+	request := httptest.NewRequest("POST", "/", pr)
+	request.Header.Add("Content-Type", writer.FormDataContentType())
+
+	//call app.UploadFiles
+	uploadFiles, err := app.UploadFile(request, "./testdata/uploads/")
+	if err != nil {
+		t.Error(err)
+	}
+
+	//perform our tests
+	if _, err := os.Stat(fmt.Sprintf("./testdata/uploads/%s", uploadFiles[0].OriginalFileName)); os.IsNotExist(err) {
+		t.Errorf("Expected file to exist: %s", err.Error())
+	}
+
+	//clean up
+	_ = os.Remove("./testdata/img.png")
+}
+
+func simulatePingUpload(fileToUpload string, writer *multipart.Writer, t *testing.T, wg *sync.WaitGroup) {
+	defer writer.Close()
+	defer wg.Done()
+
+	// 1) Cria um arquivo no disco
+	f, err := os.Create(fileToUpload)
+	if err != nil {
+		t.Fatalf("erro criando arquivo temporário: %v", err)
+	}
+
+	// 2) Gera uma imagem PNG simples
+	img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+	// exemplo preenchendo de azul
+	for y := 0; y < 100; y++ {
+		for x := 0; x < 100; x++ {
+			img.Set(x, y, color.RGBA{0, 0, 255, 255})
+		}
+	}
+
+	// 3) Grava o PNG dentro do arquivo
+	if err := png.Encode(f, img); err != nil {
+		t.Fatalf("erro salvando PNG: %v", err)
+	}
+	f.Close()
+
+	// 4) Cria o multipart field
+	part, err := writer.CreateFormFile("file", path.Base(fileToUpload))
+	if err != nil {
+		t.Fatalf("erro criando form file: %v", err)
+	}
+
+	// 5) Reabre o arquivo criado
+	f2, err := os.Open(fileToUpload)
+	if err != nil {
+		t.Fatalf("erro reabrindo arquivo: %v", err)
+	}
+	defer f2.Close()
+
+	// 6) Copia o conteúdo do PNG para o multipart
+	if _, err := io.Copy(part, f2); err != nil {
+		t.Fatalf("erro copiando PNG para multipart: %v", err)
+	}
 }
