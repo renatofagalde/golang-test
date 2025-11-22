@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -29,4 +30,18 @@ func (app *application) validateToken(w http.ResponseWriter, request *http.Reque
 	if authHeader == "" {
 		return "", nil, errors.New("no auth header")
 	}
+
+	headerParts := strings.Split(authHeader, " ")
+	if len(headerParts) != 2 {
+		return "", nil, errors.New("invalid auth header")
+	}
+
+	if headerParts[0] != "Bearer" {
+		return "", nil, errors.New("unauthorized")
+	}
+
+	token := headerParts[1]
+
+	claims := &Claims{}
+
 }
