@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -43,5 +44,19 @@ func (app *application) validateToken(w http.ResponseWriter, request *http.Reque
 	token := headerParts[1]
 
 	claims := &Claims{}
+
+	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signin mehtod: %v", token.Header["alg"])
+		}
+		return []byte(app.JWTSecret), nil
+	})
+
+	if err != nil {
+		if strings.HasPrefix(err.Error(), "token is expired by") {
+			return "", nil, errors.New("expired token")
+		}
+		return "", nil, err
+	}
 
 }
