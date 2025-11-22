@@ -59,4 +59,10 @@ func (app *application) validateToken(w http.ResponseWriter, request *http.Reque
 		return "", nil, err
 	}
 
+	if claims.Issuer != app.Domain {
+		return "", nil, errors.New("incorrect issuer")
+	}
+
+	return token, claims, nil
+
 }
