@@ -1,17 +1,48 @@
 package main
 
-import "net/http"
+import (
+	"errors"
+	"golang.org/x/crypto/bcrypt"
+	"net/http"
+)
+
+type Credenials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
 func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
+	var creds Credenials
+
 	//read a json payload
+	err := app.readJSON(w, r, &creds)
+	if err != nil {
+		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
+	}
 
 	//look up the user by email address
+	user, err := app.DB.GetUserByEmail(creds.Username)
+	if err != nil {
+		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
 
 	//check password
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password))
+	if err != nil {
+		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
 
 	//generate tokens
+	tokenPairs, err := app.createTokenPair(user)
+	if err != nil {
+		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
+	}
 
 	//send token to user
+	_ = app.writeJSON(w, http.StatusCreated, tokenPairs)
 
 }
 
