@@ -28,7 +28,7 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//check password
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password))
 	if err != nil {
 		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
 		return
