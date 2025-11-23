@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bootstrap/pkg/data"
 	"errors"
 	"fmt"
 	"net/http"
@@ -65,4 +66,43 @@ func (app *application) validateToken(w http.ResponseWriter, request *http.Reque
 
 	return token, claims, nil
 
+}
+
+func (app *application) createTokenPair(user *data.User) (TokenPairs, error) {
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	claims := token.Claims.(jwt.MapClaims)
+	claims["name"] = fmt.Sprintf("%s %s", user.FirstName, user.LastName)
+	claims["sub"] = fmt.Sprint(user.ID)
+	claims["aud"] = app.Domain
+	claims["iss"] = app.Domain
+
+	if user.IsAdmin == 1 {
+		claims["admin"] = true
+	} else {
+		claims["admin"] = false
+	}
+
+	claims["exp"] = time.Now().Add(jwtTokenExpiry).Unix()
+	signedAccessToken, err := token.SignedString([]byte(app.JWTSecret))
+	if err != nil {
+		return TokenPairs{}, err
+	}
+
+	refreshToken := jwt.New(jwt.SigningMethodHS256)
+	refreshTokenClaims := refreshToken.Claims.(jwt.MapClaims)
+	refreshTokenClaims["sub"] = fmt.Sprint(user.ID)
+	refreshTokenClaims["exp"] = time.Now().Add(refreshTokenExpiry).Unix()
+
+	signedRefreshToken, err := refreshToken.SignedString([]byte(app.JWTSecret))
+	if err != nil {
+		return TokenPairs{}, err
+	}
+
+	var tokenPairs = TokenPairs{
+		Token:        signedAccessToken,
+		RefreshToken: signedRefreshToken,
+	}
+
+	return tokenPairs, nil
 }
