@@ -24,7 +24,7 @@ func main() {
 	flag.StringVar(&app.DSN, "dsn",
 		"host=localhost port=5490 user=postgres password=postgres dbname=users sslmode=disable"+
 			" timezone=UTC connect_timeout=5", "Postgres connection")
-	flag.StringVar(&app.JWTSecret, "jwt-secret", "chave-criptografia", "signing secret")
+	flag.StringVar(&app.JWTSecret, "jwt-secret", "chavecriptografia", "signing secret")
 
 	flag.Parse()
 
