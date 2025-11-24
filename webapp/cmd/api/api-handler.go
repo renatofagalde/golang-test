@@ -2,8 +2,9 @@ package main
 
 import (
 	"errors"
-	"golang.org/x/crypto/bcrypt"
 	"net/http"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Credenials struct {
@@ -14,36 +15,61 @@ type Credenials struct {
 func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 	var creds Credenials
 
-	//read a json payload
 	err := app.readJSON(w, r, &creds)
 	if err != nil {
 		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
+		return
 	}
 
-	//look up the user by email address
 	user, err := app.DB.GetUserByEmail(creds.Username)
 	if err != nil {
 		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
-	//check password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password))
 	if err != nil {
 		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
-	//generate tokens
 	tokenPairs, err := app.createTokenPair(user)
 	if err != nil {
 		app.errorJSON(w, errors.New("unauthorized"), http.StatusUnauthorized)
 		return
 	}
 
-	//send token to user
-	_ = app.writeJSON(w, http.StatusCreated, tokenPairs)
+	// ---------------------------------------------------
+	// 🔥 SE HTTPS => usa cookie
+	// 🔥 SE HTTP  => devolve refresh_token no JSON, igual antes
+	// ---------------------------------------------------
 
+	isHTTPS := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+
+	if isHTTPS {
+		// usar cookie apenas se HTTPS
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    tokenPairs.RefreshToken,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+			MaxAge:   60 * 60 * 24 * 7, // 7 dias
+		})
+
+		// apenas o access token no body
+		_ = app.writeJSON(w, http.StatusCreated, map[string]string{
+			"access_token": tokenPairs.Token,
+		})
+
+		return
+	}
+
+	// ---------------------------------------------------
+	// 🌐 HTTP → mantém comportamento antigo
+	// ---------------------------------------------------
+	_ = app.writeJSON(w, http.StatusCreated, tokenPairs)
 }
 
 func (app *application) refresh(w http.ResponseWriter, r *http.Request) {
