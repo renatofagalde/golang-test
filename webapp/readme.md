@@ -16,5 +16,5 @@ go get -u github.com/ory/dockertest/v3
 
 
 ```shell
-
+curl http://localhost:8090/auth -X POST -H "Content-Type: application/json" -d '{"username":"admin@example.com","password":"secret"}'
 ```
