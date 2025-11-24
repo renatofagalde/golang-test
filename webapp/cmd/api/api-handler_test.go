@@ -16,6 +16,9 @@ func Test_app_authenticate(t *testing.T) {
 		expectedStatusCode int
 	}{
 		{name: "valid user", requestBody: `{"username":"admin@example.com","password":"secret"}`, expectedStatusCode: http.StatusCreated},
+		{name: "empty user", requestBody: `{"username":"","password":"secret"}`, expectedStatusCode: http.StatusUnauthorized},
+		{name: "not json", requestBody: `I'm not a json`, expectedStatusCode: http.StatusUnauthorized},
+		{name: "empty json", requestBody: `{}`, expectedStatusCode: http.StatusUnauthorized},
 	}
 
 	for _, e := range tests {
